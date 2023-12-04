@@ -1,25 +1,52 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const ship = document.getElementById('ship');
-  const gameContainer = document.getElementById('game-container');
+  const { Engine, Render, World, Bodies, Mouse, MouseConstraint } = Matter;
 
-  let shipHealth = 100;
+  const engine = Engine.create();
 
-  gameContainer.addEventListener('mousemove', function (event) {
-    const x = event.clientX - gameContainer.getBoundingClientRect().left;
-    const y = event.clientY - gameContainer.getBoundingClientRect().top;
-
-    ship.style.left = `${x}px`;
-    ship.style.top = `${y}px`;
+  const render = Render.create({
+    element: document.getElementById('game-container'),
+    engine: engine,
+    options: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      wireframes: false,
+    },
   });
 
-  setInterval(function () {
-    shipHealth -= 1;
+  const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight, window.innerWidth, 50, { isStatic: true });
+  const head = Bodies.circle(window.innerWidth / 2, 200, 30);
+  const body = Bodies.rectangle(window.innerWidth / 2, 300, 50, 80);
+  const leftArm = Bodies.rectangle(window.innerWidth / 2 - 40, 300, 20, 80);
+  const rightArm = Bodies.rectangle(window.innerWidth / 2 + 40, 300, 20, 80);
+  const leftLeg = Bodies.rectangle(window.innerWidth / 2 - 20, 400, 20, 100);
+  const rightLeg = Bodies.rectangle(window.innerWidth / 2 + 20, 400, 20, 100);
 
-    document.title = `Space Ship Game | Health: ${shipHealth}%`;
+  World.add(engine.world, [ground, head, body, leftArm, rightArm, leftLeg, rightLeg]);
 
-    if (shipHealth <= 0) {
-      alert('Your spaceship tore in half! Game over.');
-      shipHealth = 100;
-    }
-  }, 1000);
+  const mouse = Mouse.create(render.canvas);
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+      stiffness: 0.2,
+      render: {
+        visible: false,
+      },
+    },
+  });
+
+  World.add(engine.world, mouseConstraint);
+
+  Engine.run(engine);
+
+  Render.run(render);
+
+  render.canvas.addEventListener('mousemove', function (event) {
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
+
+    const forceX = mouseX - head.position.x;
+    const forceY = mouseY - head.position.y;
+
+    Body.applyForce(head, { x: head.position.x, y: head.position.y }, { x: forceX * 0.01, y: forceY * 0.01 });
+  });
 });
